@@ -1,0 +1,125 @@
+<Window x:Class="Segment.Views.WelcomeWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Welcome to Segment"
+        Height="520"
+        Width="500"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="CanResize"
+        WindowStyle="SingleBorderWindow"
+        Background="#F5F5F5"
+        MinHeight="480" MinWidth="450" MaxHeight="700">
+    
+    <Window.Resources>
+        <Style x:Key="ModernButton" TargetType="Button">
+            <Setter Property="Background" Value="#8A2BE2"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="16"/>
+            <Setter Property="FontWeight" Value="SemiBold"/>
+            <Setter Property="Padding" Value="30,12"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}"
+                                CornerRadius="6"
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter HorizontalAlignment="Center"
+                                              VerticalAlignment="Center"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsMouseOver" Value="True">
+                    <Setter Property="Background" Value="#7B1FA2"/>
+                </Trigger>
+                <Trigger Property="IsPressed" Value="True">
+                    <Setter Property="Background" Value="#6A1B9A"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="40">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0" HorizontalAlignment="Center" Margin="0,0,0,30">
+            <Border Width="80" Height="80" 
+                    Background="#8A2BE2" 
+                    CornerRadius="40"
+                    Margin="0,0,0,20">
+                <TextBlock Text="S" 
+                           FontSize="48" 
+                           FontWeight="Bold" 
+                           Foreground="White"
+                           HorizontalAlignment="Center" 
+                           VerticalAlignment="Center"/>
+            </Border>
+            
+            <TextBlock Text="Welcome to Segment" 
+                       FontSize="32" 
+                       FontWeight="Bold" 
+                       Foreground="#333333"
+                       HorizontalAlignment="Center"
+                       Margin="0,0,0,10"/>
+            
+            <TextBlock Text="Your Smart Translation Assistant" 
+                       FontSize="14" 
+                       Foreground="#666666"
+                       HorizontalAlignment="Center"/>
+        </StackPanel>
+
+        <Border Grid.Row="1" 
+                Background="White" 
+                CornerRadius="8" 
+                Padding="20"
+                BorderBrush="#E0E0E0"
+                BorderThickness="1"
+                Margin="0,0,0,10">
+            <ScrollViewer VerticalScrollBarVisibility="Auto" 
+                          HorizontalScrollBarVisibility="Disabled">
+                <StackPanel Margin="10">
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="🖱️" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
+                    <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
+                        <Run FontWeight="SemiBold">Segment runs silently in the background.</Run>
+                        <LineBreak/>
+                        <Run>You'll see it in your System Tray (bottom-right corner).</Run>
+                    </TextBlock>
+                </StackPanel>
+
+                <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
+                    <TextBlock Text="⌨️" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
+                    <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
+                        <Run FontWeight="SemiBold">Press Ctrl + Space to translate selected text.</Run>
+                        <LineBreak/>
+                        <Run>Select any text, press the hotkey, and get instant translations.</Run>
+                    </TextBlock>
+                </StackPanel>
+
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="⚙️" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
+                        <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
+                            <Run FontWeight="SemiBold">Access settings via the System Tray icon.</Run>
+                            <LineBreak/>
+                            <Run>Right-click the tray icon to configure languages and preferences.</Run>
+                        </TextBlock>
+                    </StackPanel>
+                </StackPanel>
+            </ScrollViewer>
+        </Border>
+
+        <Button Grid.Row="2" 
+                Content="Start Using Segment"
+                Style="{StaticResource ModernButton}"
+                HorizontalAlignment="Center"
+                Margin="0,30,0,0"
+                Click="Button_Click"/>
+    </Grid>
+</Window>

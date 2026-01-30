@@ -1,0 +1,192 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\glossarywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\glossarywindow.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\glossarywindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\glossarywindow.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\services\\glossaryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:services\\glossaryservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\floatingpanel.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\floatingpanel.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\floatingpanel.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\floatingpanel.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\services\\learningmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:services\\learningmanager.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\learningwidget.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\learningwidget.xaml.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\services\\lemmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:services\\lemmaservice.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\views\\learningwidget.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:views\\learningwidget.xaml||{F11ACC28-31D1-4C80-A34B-F4E09D3D753C}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|c:\\users\\fatih\\desktop\\programming\\segment\\segment\\services\\termdetective.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{F2DBA5E1-FB6B-18DD-9200-C252CAD6A29F}|Segment.csproj|solutionrelative:services\\termdetective.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 1,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedHeight": 245,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "GlossaryWindow.xaml",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\GlossaryWindow.xaml",
+              "RelativeDocumentMoniker": "Views\\GlossaryWindow.xaml",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\GlossaryWindow.xaml",
+              "RelativeToolTip": "Views\\GlossaryWindow.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-01-29T12:30:56.666Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "GlossaryWindow.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\GlossaryWindow.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\GlossaryWindow.xaml.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\GlossaryWindow.xaml.cs",
+              "RelativeToolTip": "Views\\GlossaryWindow.xaml.cs",
+              "ViewState": "AgIAAGcAAAAAAAAAAAAswHQAAAANAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T12:24:07.865Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 4,
+              "Title": "FloatingPanel.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\FloatingPanel.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\FloatingPanel.xaml.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\FloatingPanel.xaml.cs",
+              "RelativeToolTip": "Views\\FloatingPanel.xaml.cs",
+              "ViewState": "AgIAALwAAAAAAAAAAAAIwN8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T12:17:08.379Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "FloatingPanel.xaml",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\FloatingPanel.xaml",
+              "RelativeDocumentMoniker": "Views\\FloatingPanel.xaml",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\FloatingPanel.xaml",
+              "RelativeToolTip": "Views\\FloatingPanel.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-01-29T12:16:23.159Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "GlossaryService.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\GlossaryService.cs",
+              "RelativeDocumentMoniker": "Services\\GlossaryService.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\GlossaryService.cs",
+              "RelativeToolTip": "Services\\GlossaryService.cs",
+              "ViewState": "AgIAACoAAAAAAAAAAAAwwEwAAAAJAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T12:06:26.356Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 8,
+              "Title": "LearningWidget.xaml",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\LearningWidget.xaml",
+              "RelativeDocumentMoniker": "Views\\LearningWidget.xaml",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\LearningWidget.xaml",
+              "RelativeToolTip": "Views\\LearningWidget.xaml",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.003549|",
+              "WhenOpened": "2026-01-29T11:51:42.186Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 7,
+              "Title": "LemmaService.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\LemmaService.cs",
+              "RelativeDocumentMoniker": "Services\\LemmaService.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\LemmaService.cs",
+              "RelativeToolTip": "Services\\LemmaService.cs",
+              "ViewState": "AgIAABwAAAAAAAAAAAAIwD8AAAABAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T08:23:13.357Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 5,
+              "Title": "LearningManager.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\LearningManager.cs",
+              "RelativeDocumentMoniker": "Services\\LearningManager.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\LearningManager.cs",
+              "RelativeToolTip": "Services\\LearningManager.cs",
+              "ViewState": "AgIAAD0AAAAAAAAAAAAgwEcAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T07:03:05.615Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 9,
+              "Title": "TermDetective.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\TermDetective.cs",
+              "RelativeDocumentMoniker": "Services\\TermDetective.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Services\\TermDetective.cs",
+              "RelativeToolTip": "Services\\TermDetective.cs",
+              "ViewState": "AgIAAD0AAAAAAAAAAAAiwEsAAAAiAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T07:02:57.177Z"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 6,
+              "Title": "LearningWidget.xaml.cs",
+              "DocumentMoniker": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\LearningWidget.xaml.cs",
+              "RelativeDocumentMoniker": "Views\\LearningWidget.xaml.cs",
+              "ToolTip": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Views\\LearningWidget.xaml.cs",
+              "RelativeToolTip": "Views\\LearningWidget.xaml.cs",
+              "ViewState": "AgIAADEAAAAAAAAAAAArwEUAAAAAAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2026-01-29T07:05:27.824Z"
+            }
+          ]
+        },
+        {
+          "DockedHeight": 155,
+          "SelectedChildIndex": -1,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{34e76e81-ee4a-11d0-ae2e-00a0c90fffc3}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{d78612c7-9962-4b83-95d9-268046dad23a}"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

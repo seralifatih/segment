@@ -1,0 +1,167 @@
+﻿<Window x:Class="Segment.App.Views.FloatingPanel"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Segment" Height="400" Width="600"
+        WindowStyle="None" ResizeMode="NoResize"
+        AllowsTransparency="True" Background="Transparent"
+        ShowInTaskbar="False" Topmost="True"
+        WindowStartupLocation="CenterScreen">
+
+    <Border CornerRadius="12" Background="#1E1E1E" BorderBrush="#333333" BorderThickness="1">
+        <Border.Effect>
+            <DropShadowEffect Color="Black" BlurRadius="20" ShadowDepth="5" Opacity="0.6"/>
+        </Border.Effect>
+
+        <Grid Margin="20">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+            </Grid.RowDefinitions>
+
+            <TextBox x:Name="InputText" 
+                     Grid.Row="0" 
+                     Height="60"
+                     Background="Transparent"
+                     Foreground="#E0E0E0"
+                     CaretBrush="#4CC2FF"
+                     BorderThickness="0"
+                     FontFamily="Segoe UI"
+                     FontSize="15"
+                     TextWrapping="Wrap" 
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     KeyDown="InputText_KeyDown"
+                     SelectionBrush="#4CC2FF"
+                     SelectionOpacity="0.4"/>
+
+            <Border Grid.Row="1" Height="1" Background="#333333" Margin="0,10,0,10"/>
+
+            <TextBox x:Name="OutputText" 
+                     Grid.Row="2" 
+                     Background="Transparent"
+                     Foreground="#4CC2FF"
+                     BorderThickness="0"
+                     FontFamily="Segoe UI Semibold"
+                     FontSize="16"
+                     TextWrapping="Wrap" 
+                     AcceptsReturn="True"
+                     VerticalScrollBarVisibility="Auto"
+                     SelectionBrush="#E0E0E0"
+                     SelectionOpacity="0.4"/>
+
+            <Border x:Name="TermPanel" Grid.Row="3" Margin="0,15,0,5" 
+                    Background="#252526" CornerRadius="6" BorderBrush="#3E3E42" BorderThickness="1"
+                    Visibility="Collapsed">
+                <StackPanel Margin="10">
+                    <TextBlock Text="TERMINOLOGY" Foreground="#666666" FontSize="10" FontWeight="Bold" Margin="0,0,0,5"/>
+
+                    <ItemsControl x:Name="TermList">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,2">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Text="{Binding Source}" Foreground="#CCCCCC" FontSize="12"/>
+                                    <TextBlock Grid.Column="1" Text=" → " Foreground="#888888" FontSize="12"/>
+                                    <StackPanel Grid.Column="2" Orientation="Horizontal">
+                                        <TextBlock Text="{Binding Target}" Foreground="#4CC2FF" FontWeight="SemiBold" FontSize="12"/>
+                                        <TextBlock Text=" ✔" Foreground="#4CC2FF" FontSize="12"/>
+                                    </StackPanel>
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </StackPanel>
+            </Border>
+
+            <Grid Grid.Row="4" Margin="0,15,0,0">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+
+                    <Button x:Name="SettingsButton" 
+                            Content="⚙️" 
+                            ToolTip="Settings"
+                            Background="Transparent" 
+                            Foreground="#555555" 
+                            BorderThickness="0" 
+                            Cursor="Hand" 
+                            Click="SettingsButton_Click"
+                            Width="30" Height="30"
+                            FontSize="16"
+                            VerticalAlignment="Center"/>
+
+                    <ToggleButton x:Name="FreezeButton"
+                                  Click="FreezeButton_Click"
+                                  Width="30" Height="30"
+                                  Margin="5,0,0,0"
+                                  Background="Transparent" 
+                                  BorderThickness="0"
+                                  Cursor="Hand"
+                                  ToolTip="Freeze Learning (Stop popup for this project)">
+                        <ToggleButton.Template>
+                            <ControlTemplate TargetType="ToggleButton">
+                                <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="4">
+                                    <TextBlock x:Name="Icon" 
+                                               Text="❄️" 
+                                               HorizontalAlignment="Center" 
+                                               VerticalAlignment="Center" 
+                                               FontSize="14"/>
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsChecked" Value="True">
+                                        <Setter TargetName="border" Property="Background" Value="#33007ACC"/>
+                                        <Setter TargetName="Icon" Property="Foreground" Value="#4CC2FF"/>
+                                    </Trigger>
+                                    <Trigger Property="IsChecked" Value="False">
+                                        <Setter TargetName="border" Property="Background" Value="Transparent"/>
+                                        <Setter TargetName="Icon" Property="Foreground" Value="#444444"/>
+                                    </Trigger>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="Icon" Property="Foreground" Value="#AAAAAA"/>
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </ToggleButton.Template>
+                    </ToggleButton>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Margin="15,0,0,0" VerticalAlignment="Center">
+                    <TextBlock Text="Project:" 
+                               Foreground="#666666" 
+                               FontSize="11" 
+                               FontWeight="SemiBold"
+                               VerticalAlignment="Center" 
+                               Margin="0,0,5,0"/>
+
+                    <ComboBox x:Name="ProfileCombo" 
+                              Height="22" 
+                              FontSize="11" 
+                              Width="120"
+                              Background="Transparent" 
+                              BorderThickness="0"
+                              IsEditable="True"
+                              IsReadOnly="False"
+                              KeyUp="ProfileCombo_KeyUp"
+                              DropDownClosed="ProfileCombo_DropDownClosed"
+                              ToolTip="Type to create/switch project"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+                    <TextBlock Text="[Ctrl+Space] Copy &amp; Close" Foreground="#555555" FontSize="11" Margin="0,0,15,0"/>
+                    <TextBlock Text="[Esc] Cancel" Foreground="#555555" FontSize="11"/>
+                </StackPanel>
+            </Grid>
+        </Grid>
+    </Border>
+</Window>

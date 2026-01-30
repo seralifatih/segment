@@ -1,0 +1,12 @@
+{
+  "TargetLanguage": "French",
+  "AiProvider": "Google",
+  "GoogleApiKey": "",
+  "GoogleModel": "gemma-3-27b-it",
+  "OllamaUrl": "http://localhost:11434/api/generate",
+  "OllamaModel": "llama3.2",
+  "CustomBaseUrl": "https://api.openai.com/v1",
+  "CustomApiKey": "",
+  "CustomModel": "gpt-4o-mini",
+  "IsFirstRun": false
+}
