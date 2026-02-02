@@ -19,27 +19,29 @@ namespace Segment.Services
         Task CheckForUpdatesAsync();
     }
 
-    public class GitHubUpdateService : IUpdateService
+    public class UpdateService : IUpdateService
     {
-        // TODO: REPLACE THIS URL with your actual raw JSON URL (e.g., from GitHub Gist or Repo)
-        private const string RemoteVersionUrl = "https://raw.githubusercontent.com/YOUR_USERNAME/Segment/main/version.json";
+        private const string RemoteVersionUrl = "https://raw.githubusercontent.com/seralifatih/segment/main/version.json";
+        private static readonly HttpClient HttpClient = new HttpClient
+        {
+            Timeout = TimeSpan.FromSeconds(5)
+        };
         
         public async Task CheckForUpdatesAsync()
         {
             try
             {
-                using var client = new HttpClient();
-                client.Timeout = TimeSpan.FromSeconds(5);
-                
                 // 1. Fetch JSON
-                var json = await client.GetStringAsync(RemoteVersionUrl);
+                var json = await HttpClient.GetStringAsync(RemoteVersionUrl);
                 var updateInfo = JsonSerializer.Deserialize<UpdateInfo>(json, new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
                 if (updateInfo == null || string.IsNullOrWhiteSpace(updateInfo.Version)) return;
 
                 // 2. Compare Versions
                 var currentVersion = Assembly.GetExecutingAssembly().GetName().Version;
-                var remoteVersion = Version.Parse(updateInfo.Version);
+                if (currentVersion == null) return;
+
+                if (!Version.TryParse(updateInfo.Version, out var remoteVersion)) return;
 
                 if (remoteVersion > currentVersion)
                 {

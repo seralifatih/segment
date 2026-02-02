@@ -74,6 +74,11 @@ namespace Segment
             SettingsService.Load(); // Veya SettingsService.Instance.Load()
             SetupTrayIcon();
 
+            // ========================================
+            // TASK 3: Auto-Update Check (Fire-and-forget)
+            // ========================================
+            _ = Task.Run(() => new UpdateService().CheckForUpdatesAsync());
+
             // Register global hotkey
             try
             {
@@ -87,6 +92,15 @@ namespace Segment
             if (SettingsService.Instance.IsFirstRun)
             {
                 WelcomeWindow welcomeWindow = new WelcomeWindow();
+                welcomeWindow.Closed += (s, args) =>
+                {
+                    _notifyIcon?.ShowBalloonTip(
+                        3000,
+                        "Segment is Ready 🚀",
+                        "I'm running silently in the background.\nPress Ctrl+Space to translate!",
+                        ToolTipIcon.Info
+                    );
+                };
                 welcomeWindow.Show();
             }
             // If not first run, app starts silently in system tray
