@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Windows;
+using Segment.App.Models;
 using Segment.App.Services;
 
 namespace Segment.App.Views
@@ -7,8 +8,7 @@ namespace Segment.App.Views
     public partial class LearningWidget : Window
     {
         private DetectedChange _change;
-        // Dilleri burada saklayalım
-        private string _srcLang = "English"; // Varsayılan
+        private string _srcLang = "English";
         private string _trgLang = "Turkish";
 
         public LearningWidget(DetectedChange change)
@@ -16,17 +16,10 @@ namespace Segment.App.Views
             InitializeComponent();
             _change = change;
 
-            // 1. Dilleri Ayarlardan Çek
-            // SettingsService'de SourceLanguage yoksa varsayılan English kabul edelim.
-            // Ama TargetLanguage kesin var.
             var settings = SettingsService.Current;
             _trgLang = settings.TargetLanguage ?? "Turkish";
-
-            // Eğer SourceLanguage ayarın yoksa şimdilik "English" kalsın veya "Auto" ise "English" yap.
-            // İleride buraya detected language de gelebilir.
             _srcLang = "English";
 
-            // 2. Arayüzü Güncelle (XAML'daki Label'lar)
             SourceLangLabel.Text = $"{_srcLang} (Source)";
             TargetLangLabel.Text = $"{_trgLang} (Target)";
 
@@ -37,8 +30,6 @@ namespace Segment.App.Views
 
             PositionWindow();
             AnimateEntry();
-
-            // 3. Lemma İşlemini Başlat
             AutoLemmatize();
         }
 
@@ -47,17 +38,15 @@ namespace Segment.App.Views
             OldTermBox.Opacity = 0.5;
             NewTermBox.Opacity = 0.5;
 
-            // Dilleri de gönderiyoruz 🌍
             var result = await LemmaService.AlignAndLemmatizeAsync(
                 _change.FullSourceText,
                 _change.SourceTerm,
                 _change.NewTerm,
                 _srcLang,
-                _trgLang
-            );
+                _trgLang);
 
-            OldTermBox.Text = result.SourceLemma;
-            NewTermBox.Text = result.TargetLemma;
+            OldTermBox.Text = PromptSafetySanitizer.SanitizeGlossaryConstraint(result.SourceLemma);
+            NewTermBox.Text = PromptSafetySanitizer.SanitizeGlossaryConstraint(result.TargetLemma);
 
             OldTermBox.Opacity = 1;
             NewTermBox.Opacity = 1;
@@ -65,68 +54,262 @@ namespace Segment.App.Views
 
         private void Save_Click(object sender, RoutedEventArgs e)
         {
-            string source = OldTermBox.Text.Trim();
-            string target = NewTermBox.Text.Trim();
+            string source = PromptSafetySanitizer.SanitizeGlossaryConstraint(OldTermBox.Text);
+            string target = PromptSafetySanitizer.SanitizeGlossaryConstraint(NewTermBox.Text);
 
             if (!string.IsNullOrEmpty(source) && !string.IsNullOrEmpty(target))
             {
+                if (PromptSafetySanitizer.IsInstructionLike(source) || PromptSafetySanitizer.IsInstructionLike(target))
+                {
+                    System.Windows.MessageBox.Show(
+                        "Term candidate includes instruction-like payload and was blocked.",
+                        "Prompt Safety",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
                 bool isGlobal = ScopeGlobal.IsChecked == true;
+                bool isProjectFrozen = !isGlobal && GlossaryService.CurrentProfile?.IsFrozen == true;
+                bool guardrailOverrideEnabled = SettingsService.Current.AllowGuardrailOverrides;
+                if (isGlobal && SettingsService.Current.RequireExplicitSharedPromotionApproval)
+                {
+                    if (!TryPromptSharedPromotionApproval(out string approvalReason))
+                    {
+                        ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                        {
+                            EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                            AccountId = SettingsService.Current.AccountId,
+                            Decision = "shared_promotion_denied",
+                            ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                            ProviderRoute = SettingsService.Current.AiProvider,
+                            RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                            Details = $"Shared glossary promotion denied for '{source}'. Explicit approval missing.",
+                            Metadata = new()
+                            {
+                                ["scope"] = "global",
+                                ["source"] = source
+                            }
+                        });
+                        return;
+                    }
 
-                // Servise soruyoruz: "Bu terim yeni mi?"
-                // Not: AddTerm metodunu "Check" modunda çağırmıyoruz, direkt eklemeye çalışıyoruz 
-                // ama metodun mantığını "AddOrUpdate" yerine önce "Check" yapacak şekilde revize edelim mi?
-                // Vibe Coding ruhuna uygun olarak: Servis zaten ekliyor. 
-                // Biz burada UI tarafında "Kullanıcıya sormadan ekleme" mantığını kuralım.
+                    ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                    {
+                        EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                        AccountId = SettingsService.Current.AccountId,
+                        Decision = "shared_promotion_approved",
+                        ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                        ProviderRoute = SettingsService.Current.AiProvider,
+                        RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                        Details = $"Shared glossary promotion approved for '{source}'. Reason: {approvalReason}",
+                        Metadata = new()
+                        {
+                            ["scope"] = "global",
+                            ["source"] = source
+                        }
+                    });
+                }
 
-                // ÖNCE KONTROL ET (Daha güvenli)
+                if (isProjectFrozen && !guardrailOverrideEnabled)
+                {
+                    ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                    {
+                        EventType = ComplianceAuditEventType.GuardrailOverride,
+                        AccountId = SettingsService.Current.AccountId,
+                        Decision = "blocked",
+                        ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                        ProviderRoute = SettingsService.Current.AiProvider,
+                        RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                        Details = $"Attempted update on frozen profile '{GlossaryService.CurrentProfile.Name}' was blocked.",
+                        Metadata = new()
+                        {
+                            ["profile"] = GlossaryService.CurrentProfile.Name,
+                            ["term"] = source
+                        }
+                    });
+
+                    System.Windows.MessageBox.Show(
+                        "This glossary profile is frozen. Guardrail overrides are disabled for this account.",
+                        "Guardrail Blocked",
+                        System.Windows.MessageBoxButton.OK,
+                        System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
                 var targetProfile = isGlobal ? GlossaryService.GlobalProfile : GlossaryService.CurrentProfile;
                 var existing = targetProfile.Terms.FindById(source);
                 bool exists = existing != null;
 
                 if (exists)
                 {
-                    // Eski değeri alalım ki kullanıcı neyi değiştirdiğini bilsin
                     var oldVal = existing.Target;
 
-                    // Eğer değer zaten aynıysa işlem yapma, kapat
                     if (oldVal.Equals(target, StringComparison.OrdinalIgnoreCase))
                     {
-                        this.Close();
+                        Close();
                         return;
                     }
 
                     var result = System.Windows.MessageBox.Show(
                         $"'{source}' is already defined as '{oldVal}' in {(isGlobal ? "Global" : "Project")} scope.\n\nOverwrite with '{target}'?",
-                        "⚠️ Conflict Detected",
+                        "Conflict Detected",
                         System.Windows.MessageBoxButton.YesNo,
                         System.Windows.MessageBoxImage.Warning);
 
-                    if (result == System.Windows.MessageBoxResult.No)
+                    if (result == MessageBoxResult.No)
                     {
-                        return; // İptal et, pencere açık kalsın
+                        ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                        {
+                            EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                            AccountId = SettingsService.Current.AccountId,
+                            Decision = "skip_overwrite",
+                            ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                            ProviderRoute = SettingsService.Current.AiProvider,
+                            RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                            Details = $"User skipped overwrite for '{source}' in {(isGlobal ? "global" : "project")} scope.",
+                            Metadata = new()
+                            {
+                                ["term"] = source,
+                                ["existing_target"] = oldVal,
+                                ["requested_target"] = target,
+                                ["scope"] = isGlobal ? "global" : "project"
+                            }
+                        });
+                        return;
                     }
+
+                    ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                    {
+                        EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                        AccountId = SettingsService.Current.AccountId,
+                        Decision = "confirm_overwrite",
+                        ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                        ProviderRoute = SettingsService.Current.AiProvider,
+                        RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                        Details = $"User confirmed overwrite for '{source}' in {(isGlobal ? "global" : "project")} scope.",
+                        Metadata = new()
+                        {
+                            ["term"] = source,
+                            ["existing_target"] = oldVal,
+                            ["requested_target"] = target,
+                            ["scope"] = isGlobal ? "global" : "project"
+                        }
+                    });
                 }
 
-                // Kullanıcı onayladı veya terim zaten yok -> Kaydet
+                if (isProjectFrozen && guardrailOverrideEnabled)
+                {
+                    ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                    {
+                        EventType = ComplianceAuditEventType.GuardrailOverride,
+                        AccountId = SettingsService.Current.AccountId,
+                        Decision = "applied",
+                        ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                        ProviderRoute = SettingsService.Current.AiProvider,
+                        RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                        Details = $"Guardrail override used on frozen profile '{GlossaryService.CurrentProfile.Name}'.",
+                        Metadata = new()
+                        {
+                            ["profile"] = GlossaryService.CurrentProfile.Name,
+                            ["term"] = source
+                        }
+                    });
+                }
+
                 GlossaryService.AddTerm(source, target, isGlobal);
             }
-            this.Close();
+
+            Close();
         }
 
-        private void Ignore_Click(object sender, RoutedEventArgs e) => this.Close();
+        private static bool TryPromptSharedPromotionApproval(out string reason)
+        {
+            reason = string.Empty;
+            MessageBoxResult confirm = System.Windows.MessageBox.Show(
+                "Promoting this term to Global/Shared scope affects broader users.\n\nDo you want to continue?",
+                "Shared Glossary Promotion",
+                System.Windows.MessageBoxButton.YesNo,
+                System.Windows.MessageBoxImage.Warning);
+            if (confirm != MessageBoxResult.Yes)
+            {
+                return false;
+            }
+
+            var dialog = new Window
+            {
+                Title = "Shared Promotion Approval",
+                Width = 460,
+                Height = 220,
+                WindowStartupLocation = WindowStartupLocation.CenterScreen,
+                ResizeMode = ResizeMode.NoResize,
+                WindowStyle = WindowStyle.SingleBorderWindow
+            };
+
+            var panel = new System.Windows.Controls.StackPanel { Margin = new Thickness(16) };
+            panel.Children.Add(new System.Windows.Controls.TextBlock
+            {
+                Text = "Provide a short approval reason for shared promotion:",
+                TextWrapping = TextWrapping.Wrap
+            });
+
+            var reasonBox = new System.Windows.Controls.TextBox
+            {
+                Margin = new Thickness(0, 10, 0, 10),
+                AcceptsReturn = true,
+                Height = 80,
+                TextWrapping = TextWrapping.Wrap
+            };
+            panel.Children.Add(reasonBox);
+
+            var buttons = new System.Windows.Controls.StackPanel
+            {
+                Orientation = System.Windows.Controls.Orientation.Horizontal,
+                HorizontalAlignment = System.Windows.HorizontalAlignment.Right
+            };
+            var cancel = new System.Windows.Controls.Button { Content = "Cancel", Width = 80, Margin = new Thickness(0, 0, 8, 0) };
+            var ok = new System.Windows.Controls.Button { Content = "Approve", Width = 90 };
+            cancel.Click += (_, _) => { dialog.DialogResult = false; dialog.Close(); };
+            ok.Click += (_, _) =>
+            {
+                if (string.IsNullOrWhiteSpace(reasonBox.Text))
+                {
+                    System.Windows.MessageBox.Show("Approval reason is required.", "Validation", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                dialog.DialogResult = true;
+                dialog.Close();
+            };
+            buttons.Children.Add(cancel);
+            buttons.Children.Add(ok);
+            panel.Children.Add(buttons);
+            dialog.Content = panel;
+
+            bool? result = dialog.ShowDialog();
+            if (result == true)
+            {
+                reason = reasonBox.Text.Trim();
+                return true;
+            }
+
+            return false;
+        }
+
+        private void Ignore_Click(object sender, RoutedEventArgs e) => Close();
 
         private void PositionWindow()
         {
             var desktop = SystemParameters.WorkArea;
-            this.Left = desktop.Right - this.Width - 20;
-            this.Top = desktop.Bottom - this.Height - 20;
+            Left = desktop.Right - Width - 20;
+            Top = desktop.Bottom - Height - 20;
         }
 
         private void AnimateEntry()
         {
-            this.Opacity = 0;
+            Opacity = 0;
             var anim = new System.Windows.Media.Animation.DoubleAnimation(1, TimeSpan.FromSeconds(0.3));
-            this.BeginAnimation(UIElement.OpacityProperty, anim);
+            BeginAnimation(UIElement.OpacityProperty, anim);
         }
     }
 }

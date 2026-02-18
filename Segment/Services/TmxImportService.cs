@@ -92,7 +92,9 @@ namespace Segment.App.Services
                             CreatedAt = DateTime.Now,
                             LastUsed = DateTime.Now,
                             UsageCount = 0,
-                            IsUserConfirmed = true
+                            IsUserConfirmed = true,
+                            SourceLanguage = string.IsNullOrWhiteSpace(sourceLangCode) ? "English" : sourceLangCode,
+                            TargetLanguage = string.IsNullOrWhiteSpace(targetLangCode) ? (targetLanguage ?? "Turkish") : targetLangCode
                         });
                     }
                 }

@@ -1,0 +1,6 @@
+﻿{
+  "latency_p95_ms": 640,
+  "crash_free_session_rate": 0.997,
+  "glossary_determinism_pass_rate": 0.999,
+  "migration_success_rate": 0.999
+}

@@ -1,17 +1,20 @@
 {
   "version": 2,
-  "dgSpecHash": "adwt8CVdYX8=",
+  "dgSpecHash": "YD9poyil/tw=",
   "success": true,
   "projectFilePath": "C:\\Users\\fatih\\Desktop\\Programming\\Segment\\Segment\\Segment.csproj",
   "expectedPackageFiles": [
     "C:\\Users\\fatih\\.nuget\\packages\\litedb\\5.0.21\\litedb.5.0.21.nupkg.sha512",
-    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.net.illink.tasks\\8.0.23\\microsoft.net.illink.tasks.8.0.23.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.data.sqlite\\8.0.10\\microsoft.data.sqlite.8.0.10.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.data.sqlite.core\\8.0.10\\microsoft.data.sqlite.core.8.0.10.nupkg.sha512",
     "C:\\Users\\fatih\\.nuget\\packages\\nhotkey\\4.0.0\\nhotkey.4.0.0.nupkg.sha512",
     "C:\\Users\\fatih\\.nuget\\packages\\nhotkey.wpf\\4.0.0\\nhotkey.wpf.4.0.0.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\sqlitepclraw.bundle_e_sqlite3\\2.1.6\\sqlitepclraw.bundle_e_sqlite3.2.1.6.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\sqlitepclraw.core\\2.1.6\\sqlitepclraw.core.2.1.6.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\sqlitepclraw.lib.e_sqlite3\\2.1.6\\sqlitepclraw.lib.e_sqlite3.2.1.6.nupkg.sha512",
+    "C:\\Users\\fatih\\.nuget\\packages\\sqlitepclraw.provider.e_sqlite3\\2.1.6\\sqlitepclraw.provider.e_sqlite3.2.1.6.nupkg.sha512",
     "C:\\Users\\fatih\\.nuget\\packages\\system.buffers\\4.5.1\\system.buffers.4.5.1.nupkg.sha512",
-    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.netcore.app.runtime.win-x64\\8.0.23\\microsoft.netcore.app.runtime.win-x64.8.0.23.nupkg.sha512",
-    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.windowsdesktop.app.runtime.win-x64\\8.0.23\\microsoft.windowsdesktop.app.runtime.win-x64.8.0.23.nupkg.sha512",
-    "C:\\Users\\fatih\\.nuget\\packages\\microsoft.aspnetcore.app.runtime.win-x64\\8.0.23\\microsoft.aspnetcore.app.runtime.win-x64.8.0.23.nupkg.sha512"
+    "C:\\Users\\fatih\\.nuget\\packages\\system.memory\\4.5.3\\system.memory.4.5.3.nupkg.sha512"
   ],
   "logs": []
 }

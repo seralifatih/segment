@@ -8,15 +8,18 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Forms; // NotifyIcon için
 using System.Linq;
+using System.Collections.Generic;
 using Application = System.Windows.Application;
 using MessageBox = System.Windows.MessageBox;
 
 using NHotkey;
 using NHotkey.Wpf;
-using Segment.Views;
-using Segment.Services;
+using Segment.App.Views;
+using Segment.App.Services;
+using Segment.App.Models;
+using System.Windows.Input;
 
-namespace Segment
+namespace Segment.App
 {
     public partial class App : Application
     {
@@ -72,24 +75,26 @@ namespace Segment
 
             // Load settings and initialize services
             SettingsService.Load(); // Veya SettingsService.Instance.Load()
+            EnsureActiveDomainLoaded();
             SetupTrayIcon();
+            _ = Task.Run(() => TranslationService.WarmupSelectedProviderAsync());
 
             // ========================================
             // TASK 3: Auto-Update Check (Fire-and-forget)
             // ========================================
-            _ = Task.Run(() => new UpdateService().CheckForUpdatesAsync());
+            _ = Task.Run(() => new Segment.Services.UpdateService().CheckForUpdatesAsync());
 
             // Register global hotkey
             try
             {
-                HotkeyManager.Current.AddOrReplace("ShowSegment", System.Windows.Input.Key.Space, System.Windows.Input.ModifierKeys.Control, OnHotkeyPressed);
+                RegisterConfiguredHotkeys();
             }
             catch { }
 
             // ========================================
             // TASK 4: First Run Experience
             // ========================================
-            if (SettingsService.Instance.IsFirstRun)
+            if (SettingsService.Current.IsFirstRun)
             {
                 WelcomeWindow welcomeWindow = new WelcomeWindow();
                 welcomeWindow.Closed += (s, args) =>
@@ -129,28 +134,36 @@ namespace Segment
 
         private void LogCrash(Exception ex, string source)
         {
+            if (!SettingsService.Current.TelemetryCrashDiagnosticsConsent)
+            {
+                return;
+            }
+
             try
             {
-                string crashDetails = $"""
-                    ═══════════════════════════════════════════════════════════
-                    CRASH REPORT
-                    ═══════════════════════════════════════════════════════════
-                    Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}
-                    Source:    {source}
-                    Message:   {ex.Message}
-                    
-                    Stack Trace:
-                    {ex.StackTrace}
-                    
-                    Inner Exception:
-                    {(ex.InnerException != null ? ex.InnerException.ToString() : "None")}
-                    ═══════════════════════════════════════════════════════════
-                    
-                    """;
+                bool minimize = SettingsService.Current.MinimizeDiagnosticLogging
+                    || SettingsService.Current.ConfidentialProjectLocalOnly
+                    || string.Equals(SettingsService.Current.ConfidentialityMode, "LocalOnly", StringComparison.OrdinalIgnoreCase);
+
+                string safeMessage = SensitiveDataRedactor.Redact(ex.Message ?? string.Empty);
+                string safeStack = SensitiveDataRedactor.Redact(ex.StackTrace ?? string.Empty);
+                string safeInner = SensitiveDataRedactor.Redact(ex.InnerException?.ToString() ?? "None");
+
+                string crashDetails =
+                    "==============================\n" +
+                    "CRASH REPORT\n" +
+                    "==============================\n" +
+                    $"Timestamp: {DateTime.Now:yyyy-MM-dd HH:mm:ss}\n" +
+                    $"Source:    {source}\n" +
+                    $"Message:   {safeMessage}\n\n" +
+                    "Stack Trace:\n" +
+                    $"{(minimize ? "[omitted by privacy mode]" : safeStack)}\n\n" +
+                    "Inner Exception:\n" +
+                    $"{(minimize ? "[omitted by privacy mode]" : safeInner)}\n" +
+                    "==============================\n\n";
 
                 File.AppendAllText(_crashLogPath, crashDetails);
 
-                // Try to show a balloon tip notification before crash
                 _notifyIcon?.ShowBalloonTip(
                     3000,
                     "Segment Crashed",
@@ -223,7 +236,7 @@ namespace Segment
             if (_notifyIcon == null) return;
 
             ContextMenuStrip menu = new ContextMenuStrip();
-            string currentLang = SettingsService.Instance.TargetLanguage;
+            string currentLang = SettingsService.Current.TargetLanguage;
 
             // --- 1. TARGET LANGUAGE MENU ---
             ToolStripMenuItem langMenu = new ToolStripMenuItem("Target Language");
@@ -277,7 +290,7 @@ namespace Segment
         private void ChangeLanguageFromTray(string newLang)
         {
             // 1. Ayarı güncelle
-            SettingsService.Instance.TargetLanguage = newLang;
+            SettingsService.Current.TargetLanguage = newLang;
             SettingsService.Save();
 
             // 2. Menüyü yenile (Tik işaretini güncellemek için)
@@ -321,6 +334,75 @@ namespace Segment
             panel.HandleSmartHotkey();
         }
 
+        private void OnTranslateSelectionInPlaceHotkeyPressed(object? sender, HotkeyEventArgs e)
+        {
+            e.Handled = true;
+            if (panel == null)
+            {
+                panel = new FloatingPanel();
+                panel.Closed += (s, args) => panel = null;
+            }
+
+            panel.HandleTranslateSelectionInPlaceFallback();
+        }
+
+        private void RegisterConfiguredHotkeys()
+        {
+            try
+            {
+                HotkeyManager.Current.Remove("ShowSegment");
+                HotkeyManager.Current.Remove("TranslateSelectionInPlace");
+            }
+            catch
+            {
+                // Best effort remove before replace.
+            }
+
+            bool showValid = HotkeyBindingService.TryParse(
+                SettingsService.Current.ShowPanelHotkey,
+                "ShowSegment",
+                out HotkeyBinding showBinding);
+            bool inPlaceValid = HotkeyBindingService.TryParse(
+                SettingsService.Current.TranslateSelectionInPlaceHotkey,
+                "TranslateSelectionInPlace",
+                out HotkeyBinding inPlaceBinding);
+
+            if (!showValid)
+            {
+                showBinding = new HotkeyBinding { Name = "ShowSegment", Key = Key.Space, Modifiers = ModifierKeys.Control };
+                SettingsService.Current.ShowPanelHotkey = "Ctrl+Space";
+            }
+
+            if (!inPlaceValid)
+            {
+                inPlaceBinding = new HotkeyBinding { Name = "TranslateSelectionInPlace", Key = Key.Space, Modifiers = ModifierKeys.Control | ModifierKeys.Shift };
+                SettingsService.Current.TranslateSelectionInPlaceHotkey = "Ctrl+Shift+Space";
+            }
+
+            IReadOnlyList<string> conflicts = HotkeyBindingService.FindConflicts(showBinding, inPlaceBinding);
+            if (conflicts.Count > 0)
+            {
+                showBinding = new HotkeyBinding { Name = "ShowSegment", Key = Key.Space, Modifiers = ModifierKeys.Control };
+                inPlaceBinding = new HotkeyBinding { Name = "TranslateSelectionInPlace", Key = Key.Space, Modifiers = ModifierKeys.Control | ModifierKeys.Shift };
+                SettingsService.Current.ShowPanelHotkey = "Ctrl+Space";
+                SettingsService.Current.TranslateSelectionInPlaceHotkey = "Ctrl+Shift+Space";
+                _notifyIcon?.ShowBalloonTip(
+                    4000,
+                    "Segment Hotkey Conflict",
+                    "Configured hotkeys conflicted. Defaults were restored.",
+                    ToolTipIcon.Warning);
+            }
+
+            SettingsService.Save();
+            HotkeyManager.Current.AddOrReplace("ShowSegment", showBinding.Key, showBinding.Modifiers, OnHotkeyPressed);
+            HotkeyManager.Current.AddOrReplace("TranslateSelectionInPlace", inPlaceBinding.Key, inPlaceBinding.Modifiers, OnTranslateSelectionInPlaceHotkeyPressed);
+        }
+
+        public void RefreshHotkeys()
+        {
+            RegisterConfiguredHotkeys();
+        }
+
         protected override void OnExit(ExitEventArgs e)
         {
             _notifyIcon?.Dispose();
@@ -328,5 +410,22 @@ namespace Segment
             _singleInstanceMutex?.Dispose();
             base.OnExit(e);
         }
+
+        private static void EnsureActiveDomainLoaded()
+        {
+            var domainService = new DomainProfileService();
+            if (!Enum.TryParse(SettingsService.Current.ActiveDomain, out DomainVertical configuredDomain))
+            {
+                configuredDomain = DomainVertical.Legal;
+            }
+
+            var resolvedProfile = domainService.GetProfile(configuredDomain);
+            if (!string.Equals(SettingsService.Current.ActiveDomain, resolvedProfile.Id.ToString(), StringComparison.Ordinal))
+            {
+                SettingsService.Current.ActiveDomain = resolvedProfile.Id.ToString();
+                SettingsService.Save();
+            }
+        }
     }
 }
+

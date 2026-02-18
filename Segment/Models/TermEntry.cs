@@ -19,5 +19,14 @@ namespace Segment.App.Models
         public DateTime LastUsed { get; set; } = DateTime.Now;
         public int UsageCount { get; set; } = 0;
         public bool IsUserConfirmed { get; set; } = true;
+
+        // Domain-aware layering metadata
+        public DomainVertical DomainVertical { get; set; } = DomainVertical.Legal;
+        public string SourceLanguage { get; set; } = "";
+        public string TargetLanguage { get; set; } = "";
+        public GlossaryScopeType ScopeType { get; set; } = GlossaryScopeType.Project;
+        public string ScopeOwnerId { get; set; } = "";
+        public int Priority { get; set; }
+        public DateTime? LastAcceptedAt { get; set; }
     }
 }

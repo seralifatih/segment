@@ -11,14 +11,18 @@ namespace Segment.App.Services
         {
             try
             {
+                string safeContext = PromptSafetySanitizer.SanitizeUntrustedSourceText(originalContext);
+                string safeOldTerm = PromptSafetySanitizer.SanitizeGlossaryConstraint(oldTerm);
+                string safeNewTerm = PromptSafetySanitizer.SanitizeGlossaryConstraint(newTerm);
+
                 // Prompt artık dinamik: {srcLang} -> {trgLang}
                 string prompt = $@"
 Act as a strictly bilingual linguistic alignment engine.
 User corrected a translation from {srcLang} to {trgLang}.
 
-Original {srcLang} Sentence: ""{originalContext}""
-Old {trgLang} Translation Chunk: ""{oldTerm}""
-New {trgLang} Corrected Chunk: ""{newTerm}""
+Original {srcLang} Sentence: ""{safeContext}""
+Old {trgLang} Translation Chunk: ""{safeOldTerm}""
+New {trgLang} Corrected Chunk: ""{safeNewTerm}""
 
 TASK:
 1. Identify the CORE terminology change.
@@ -50,8 +54,8 @@ Return JSON ONLY:
                 using JsonDocument doc = JsonDocument.Parse(jsonResponse);
 
                 // JSON Key'leri artık evrensel (source_lemma, target_lemma)
-                string sLemma = doc.RootElement.GetProperty("source_lemma").GetString() ?? oldTerm;
-                string tLemma = doc.RootElement.GetProperty("target_lemma").GetString() ?? newTerm;
+                string sLemma = PromptSafetySanitizer.SanitizeGlossaryConstraint(doc.RootElement.GetProperty("source_lemma").GetString() ?? safeOldTerm);
+                string tLemma = PromptSafetySanitizer.SanitizeGlossaryConstraint(doc.RootElement.GetProperty("target_lemma").GetString() ?? safeNewTerm);
 
                 return (sLemma.ToLower(), tLemma.ToLower());
             }

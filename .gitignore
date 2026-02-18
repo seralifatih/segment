@@ -1,0 +1,33 @@
+﻿# Build artifacts
+[Bb]in/
+[Oo]bj/
+out/
+
+# IDE / user files
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# Test / coverage outputs
+TestResults/
+*.coverage
+*.coveragexml
+
+# Logs and local runtime files
+*.log
+crash_log.txt
+compliance_audit.jsonl
+compliance_audit.checkpoints.json
+
+# Local app/config data
+settings.json
+*.db
+*.db-*
+*.sqlite
+*.sqlite-*
+
+# OS cruft
+.DS_Store
+Thumbs.db

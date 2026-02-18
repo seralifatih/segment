@@ -1,46 +1,45 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Security.Cryptography;
 using System.Text;
-using System.Text.Json;
-using System.Linq;
-using Segment.App.Models; 
-using LiteDB;
+using Segment.App.Models;
 
 namespace Segment.App.Services
 {
-    // Profil yapımız da artık zengin
     public class GlossaryProfile
     {
         public string Name { get; set; } = "Default";
-        // Dictionary yerine LiteDB koleksiyonu
-        public ILiteCollection<TermEntry> Terms { get; set; }
-        public bool IsFrozen { get; set; } = false;
+        public ITermCollection Terms { get; set; } = new NullTermCollection();
+        public bool IsFrozen { get; set; }
+
+        private sealed class NullTermCollection : ITermCollection
+        {
+            public IEnumerable<TermEntry> FindAll() => Array.Empty<TermEntry>();
+            public TermEntry? FindById(string source) => null;
+            public bool Upsert(TermEntry entry) => false;
+            public bool Delete(string source) => false;
+            public int Count() => 0;
+        }
     }
 
     public static class GlossaryService
     {
         private const string GlobalProfileName = "Global";
         private static readonly object SyncRoot = new();
+        private static readonly StructuredLogger Logger = new StructuredLogger();
 
-        // Read-through cache for GetEffectiveTerms
         private static Dictionary<string, TermEntry>? _cachedEffectiveTerms;
 
-        // ANA PATH: AppData/SegmentApp
         private static string DefaultBasePath => Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "SegmentApp");
         private static string? _basePathOverride;
         private static string BasePath => _basePathOverride ?? DefaultBasePath;
 
-        // KLASÖR AYRIMI (Checklist Madde 3) ✔
-        private static string GlobalPath => Path.Combine(BasePath, "Global");
-        private static string ProjectsPath => Path.Combine(BasePath, "Projects");
-        private static string DatabasePath => Path.Combine(BasePath, "glossary.db");
-
-        private static LiteDatabase? Database;
+        private static IGlossaryStore? _store;
 
         public static GlossaryProfile GlobalProfile { get; private set; } = new() { Name = GlobalProfileName };
-        public static GlossaryProfile CurrentProfile { get; private set; } = new();
+        public static GlossaryProfile CurrentProfile { get; private set; } = new() { Name = "Default" };
         public static List<GlossaryProfile> Profiles { get; private set; } = new();
 
         static GlossaryService()
@@ -52,28 +51,23 @@ namespace Segment.App.Services
         {
             lock (SyncRoot)
             {
-                InitializeDirectories();
-                Database = new LiteDatabase(DatabasePath);
-                MigrateJsonToLiteDbIfNeeded();
+                Directory.CreateDirectory(BasePath);
+                _store?.Dispose();
+                _store = new GlossarySqliteStore(BasePath, Logger);
+
                 LoadGlobalProfile();
                 LoadProjectProfiles();
             }
         }
 
-        private static void InitializeDirectories()
-        {
-            Directory.CreateDirectory(BasePath);
-            Directory.CreateDirectory(GlobalPath);
-            Directory.CreateDirectory(ProjectsPath);
-        }
-
-        // --- GLOBAL YÖNETİMİ ---
         private static void LoadGlobalProfile()
         {
+            EnsureStore().UpsertScope(GlobalProfileName, isGlobal: true, isFrozen: false);
             GlobalProfile = new GlossaryProfile
             {
                 Name = GlobalProfileName,
-                Terms = GetTermsCollection(GlobalProfileName)
+                IsFrozen = false,
+                Terms = new StoreBackedTermCollection(EnsureStore(), GlobalProfileName)
             };
         }
 
@@ -83,65 +77,76 @@ namespace Segment.App.Services
             {
                 var targetProfile = isGlobal ? GlobalProfile : CurrentProfile;
                 targetProfile.Terms.Delete(sourceLemma);
-
-                // Invalidate cache
                 _cachedEffectiveTerms = null;
             }
         }
 
-        // --- PROJECT YÖNETİMİ ---
         public static void LoadProjectProfiles()
         {
-            Profiles.Clear();
-            foreach (var record in ProfilesCollection.FindAll())
+            lock (SyncRoot)
             {
-                Profiles.Add(new GlossaryProfile
+                var scopes = EnsureStore().GetScopes();
+                Profiles = scopes
+                    .Where(x => !x.IsGlobal)
+                    .Select(x => new GlossaryProfile
+                    {
+                        Name = x.Name,
+                        IsFrozen = x.IsFrozen,
+                        Terms = new StoreBackedTermCollection(EnsureStore(), x.Name)
+                    })
+                    .OrderBy(x => x.Name, StringComparer.OrdinalIgnoreCase)
+                    .ToList();
+
+                if (Profiles.Count == 0)
                 {
-                    Name = record.Name,
-                    IsFrozen = record.IsFrozen,
-                    Terms = GetTermsCollection(record.Name)
-                });
+                    GetOrCreateProfile("Default");
+                }
+                else
+                {
+                    CurrentProfile = Profiles[0];
+                }
+
+                _cachedEffectiveTerms = null;
             }
-
-            if (Profiles.Count == 0) GetOrCreateProfile("Default");
-            else CurrentProfile = Profiles.First();
-
-            // Invalidate cache since current profile changed
-            _cachedEffectiveTerms = null;
         }
 
         public static void GetOrCreateProfile(string name)
         {
-            var existing = Profiles.FirstOrDefault(p => p.Name.Equals(name, StringComparison.OrdinalIgnoreCase));
-            if (existing != null)
+            lock (SyncRoot)
             {
-                CurrentProfile = existing;
-            }
-            else
-            {
-                var newProfile = new GlossaryProfile { Name = name };
-                newProfile.Terms = GetTermsCollection(newProfile.Name);
-                Profiles.Add(newProfile);
-                CurrentProfile = newProfile;
-                SaveProfile(newProfile);
-            }
+                string safeName = string.IsNullOrWhiteSpace(name) ? "Default" : name.Trim();
 
-            // Invalidate cache since current profile changed
-            _cachedEffectiveTerms = null;
+                var existing = Profiles.FirstOrDefault(p => p.Name.Equals(safeName, StringComparison.OrdinalIgnoreCase));
+                if (existing != null)
+                {
+                    CurrentProfile = existing;
+                }
+                else
+                {
+                    var newProfile = new GlossaryProfile
+                    {
+                        Name = safeName,
+                        Terms = new StoreBackedTermCollection(EnsureStore(), safeName)
+                    };
+                    Profiles.Add(newProfile);
+                    CurrentProfile = newProfile;
+                    SaveProfile(newProfile);
+                }
+
+                _cachedEffectiveTerms = null;
+            }
         }
 
         public static void SaveProfile(GlossaryProfile profile)
         {
-            if (profile == null) return;
-            ProfilesCollection.Upsert(new GlossaryProfileRecord
+            if (profile == null || string.IsNullOrWhiteSpace(profile.Name)) return;
+            lock (SyncRoot)
             {
-                Name = profile.Name,
-                IsFrozen = profile.IsFrozen
-            });
+                bool isGlobal = string.Equals(profile.Name, GlobalProfileName, StringComparison.OrdinalIgnoreCase);
+                EnsureStore().UpsertScope(profile.Name.Trim(), isGlobal, profile.IsFrozen);
+            }
         }
 
-        // --- CORE: EKLEME (METADATA DESTEKLİ) ---
-        // Geriye bool döner: True=Yeni Eklendi, False=Overwrite Yapıldı (UI uyarısı için)
         public static bool AddTerm(string sourceLemma, string targetLemma, bool isGlobal)
         {
             lock (SyncRoot)
@@ -150,56 +155,75 @@ namespace Segment.App.Services
                 var existing = targetProfile.Terms.FindById(sourceLemma);
                 bool isNew = existing == null;
 
-                var entry = existing ?? new TermEntry { Source = sourceLemma, CreatedAt = DateTime.Now };
+                var entry = existing ?? new TermEntry { Source = sourceLemma, CreatedAt = DateTime.UtcNow };
                 entry.Source = sourceLemma;
                 entry.Target = targetLemma;
-                entry.LastUsed = DateTime.Now;
+                entry.LastUsed = DateTime.UtcNow;
                 entry.UsageCount = (existing?.UsageCount ?? 0) + 1;
                 entry.Context = isGlobal ? "global" : targetProfile.Name;
+                entry.ScopeType = InferScopeType(targetProfile.Name, isGlobal, entry.ScopeType);
+                entry.ScopeOwnerId = InferScopeOwnerId(targetProfile.Name, isGlobal, entry.ScopeOwnerId);
+                entry.DomainVertical = InferDomain(entry.DomainVertical);
+                entry.SourceLanguage = string.IsNullOrWhiteSpace(entry.SourceLanguage) ? "English" : entry.SourceLanguage.Trim();
+                entry.TargetLanguage = string.IsNullOrWhiteSpace(entry.TargetLanguage) ? SettingsService.Current.TargetLanguage : entry.TargetLanguage.Trim();
+                entry.LastAcceptedAt = DateTime.UtcNow;
 
-                // LiteDB Upsert
                 targetProfile.Terms.Upsert(entry);
 
-                // Invalidate cache
-                _cachedEffectiveTerms = null;
+                if (!isNew && !string.Equals(existing?.Target, targetLemma, StringComparison.OrdinalIgnoreCase))
+                {
+                    ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                    {
+                        EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                        AccountId = SettingsService.Current.AccountId,
+                        Decision = "overwrite_single",
+                        ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                        ProviderRoute = SettingsService.Current.AiProvider,
+                        RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                        Details = $"Term '{sourceLemma}' updated in {(isGlobal ? "global" : "project")} scope.",
+                        Metadata = new Dictionary<string, string>
+                        {
+                            ["term"] = sourceLemma,
+                            ["existing_target"] = existing?.Target ?? "",
+                            ["new_target"] = targetLemma,
+                            ["scope"] = isGlobal ? "global" : "project"
+                        }
+                    });
+                }
 
+                _cachedEffectiveTerms = null;
                 return isNew;
             }
         }
 
-        // --- CORE: EFFECTIVE TERMS (Conflict Resolver) ---
         public static Dictionary<string, TermEntry> GetEffectiveTerms()
         {
             lock (SyncRoot)
             {
-                // Return cached result if available
                 if (_cachedEffectiveTerms != null)
                 {
                     return _cachedEffectiveTerms;
                 }
 
-                // Dictionary Key: Source Lemma (agreement)
                 var effective = new Dictionary<string, TermEntry>(StringComparer.OrdinalIgnoreCase);
 
-                // 1. Global (Taban)
                 foreach (var entry in GlobalProfile.Terms.FindAll())
                 {
                     if (!string.IsNullOrWhiteSpace(entry.Source))
+                    {
                         effective[entry.Source] = entry;
+                    }
                 }
 
-                // 2. Project (Override)
                 foreach (var entry in CurrentProfile.Terms.FindAll())
                 {
-                    // Varsa ezer, yoksa ekler.
-                    // Project scope her zaman kazanır.
                     if (!string.IsNullOrWhiteSpace(entry.Source))
+                    {
                         effective[entry.Source] = entry;
+                    }
                 }
 
-                // Cache the result
                 _cachedEffectiveTerms = effective;
-
                 return effective;
             }
         }
@@ -207,6 +231,7 @@ namespace Segment.App.Services
         public static int AddTerms(IEnumerable<TermEntry> terms, bool isGlobal)
         {
             if (terms == null) return 0;
+
             lock (SyncRoot)
             {
                 var targetProfile = isGlobal ? GlobalProfile : CurrentProfile;
@@ -220,63 +245,155 @@ namespace Segment.App.Services
                     entry.Source = entry.Source.Trim();
                     entry.Target = entry.Target.Trim();
                     if (string.IsNullOrWhiteSpace(entry.Context))
+                    {
                         entry.Context = isGlobal ? "global" : targetProfile.Name;
+                    }
+
+                    entry.ScopeType = InferScopeType(targetProfile.Name, isGlobal, entry.ScopeType);
+                    entry.ScopeOwnerId = InferScopeOwnerId(targetProfile.Name, isGlobal, entry.ScopeOwnerId);
+                    entry.DomainVertical = InferDomain(entry.DomainVertical);
+                    entry.SourceLanguage = string.IsNullOrWhiteSpace(entry.SourceLanguage) ? "English" : entry.SourceLanguage.Trim();
+                    entry.TargetLanguage = string.IsNullOrWhiteSpace(entry.TargetLanguage) ? SettingsService.Current.TargetLanguage : entry.TargetLanguage.Trim();
+                    entry.LastAcceptedAt ??= DateTime.UtcNow;
+
+                    var existing = targetProfile.Terms.FindById(entry.Source);
+                    if (existing != null && !string.Equals(existing.Target, entry.Target, StringComparison.OrdinalIgnoreCase))
+                    {
+                        ComplianceAuditService.Default.Record(new ComplianceAuditRecord
+                        {
+                            EventType = ComplianceAuditEventType.GlossaryConflictDecision,
+                            AccountId = SettingsService.Current.AccountId,
+                            Decision = "overwrite_bulk_import",
+                            ActiveMode = SettingsService.Current.ConfidentialProjectLocalOnly ? "Confidential Local-Only" : "Standard",
+                            ProviderRoute = SettingsService.Current.AiProvider,
+                            RetentionPolicySummary = SettingsService.Current.RetentionPolicySummary,
+                            Details = $"Imported term conflict resolved by overwrite for '{entry.Source}'.",
+                            Metadata = new Dictionary<string, string>
+                            {
+                                ["term"] = entry.Source,
+                                ["existing_target"] = existing.Target ?? "",
+                                ["new_target"] = entry.Target ?? "",
+                                ["scope"] = isGlobal ? "global" : "project"
+                            }
+                        });
+                    }
 
                     targetProfile.Terms.Upsert(entry);
                     count++;
                 }
 
-                // Invalidate cache
                 _cachedEffectiveTerms = null;
-
                 return count;
             }
         }
 
-        private static ILiteCollection<TermEntry> GetTermsCollection(string profileName)
-        {
-            if (Database == null) throw new InvalidOperationException("Glossary database is not initialized.");
-            var collection = Database.GetCollection<TermEntry>(GetTermsCollectionName(profileName));
-            collection.EnsureIndex(x => x.Source, unique: true);
-            return collection;
-        }
-
-        /// <summary>
-        /// Generates a collision-resistant collection name using SHA256 hashing.
-        /// Note: Changing this logic will break backward compatibility - existing profiles
-        /// will lose their connection to stored terms as collection names will differ.
-        /// </summary>
-        private static string GetTermsCollectionName(string profileName)
+        internal static string GetTermsCollectionName(string profileName)
         {
             if (string.IsNullOrWhiteSpace(profileName))
-                profileName = "default";
-
-            // Use SHA256 to generate a deterministic, collision-resistant identifier
-            using (var sha256 = SHA256.Create())
             {
-                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(profileName));
-                
-                // Convert to lowercase hexadecimal string
-                var hexHash = BitConverter.ToString(hashBytes)
-                    .Replace("-", "")
-                    .ToLowerInvariant();
-                
-                return $"terms_{hexHash}";
+                profileName = "default";
+            }
+
+            using var sha256 = SHA256.Create();
+            byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(profileName));
+            var hexHash = BitConverter.ToString(hashBytes)
+                .Replace("-", "")
+                .ToLowerInvariant();
+            return $"terms_{hexHash}";
+        }
+
+        public static IReadOnlyList<TermEntry> GetAllTermsForResolution()
+        {
+            lock (SyncRoot)
+            {
+                var all = new List<TermEntry>();
+
+                foreach (var entry in GlobalProfile.Terms.FindAll())
+                {
+                    if (entry == null || string.IsNullOrWhiteSpace(entry.Source)) continue;
+                    all.Add(WithInferredMetadata(entry, GlobalProfile.Name, isGlobal: true));
+                }
+
+                foreach (var profile in Profiles)
+                {
+                    foreach (var entry in profile.Terms.FindAll())
+                    {
+                        if (entry == null || string.IsNullOrWhiteSpace(entry.Source)) continue;
+                        all.Add(WithInferredMetadata(entry, profile.Name, isGlobal: false));
+                    }
+                }
+
+                return all;
             }
         }
 
-        private static ILiteCollection<GlossaryProfileRecord> ProfilesCollection =>
-            Database?.GetCollection<GlossaryProfileRecord>("profiles")
-            ?? throw new InvalidOperationException("Glossary database is not initialized.");
+        public static void RecordResolutionConflict(GlossaryResolutionConflictRecord record)
+        {
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            lock (SyncRoot)
+            {
+                record.CapturedAtUtc = record.CapturedAtUtc == default ? DateTime.UtcNow : record.CapturedAtUtc.ToUniversalTime();
+                EnsureStore().RecordConflict(record);
+            }
+        }
+
+        public static IReadOnlyList<GlossaryResolutionConflictRecord> GetResolutionConflicts()
+        {
+            lock (SyncRoot)
+            {
+                return EnsureStore()
+                    .GetConflicts()
+                    .OrderBy(x => x.CapturedAtUtc)
+                    .ToList();
+            }
+        }
+
+        public static IReadOnlyList<TermUsageLogRecord> GetUsageLogs(int limit = 200)
+        {
+            lock (SyncRoot)
+            {
+                return EnsureStore().GetUsageLogs(limit);
+            }
+        }
+
+        public static void RecordUsage(TermUsageLogRecord record)
+        {
+            if (record == null) throw new ArgumentNullException(nameof(record));
+            lock (SyncRoot)
+            {
+                record.CapturedAtUtc = record.CapturedAtUtc == default ? DateTime.UtcNow : record.CapturedAtUtc.ToUniversalTime();
+                EnsureStore().RecordUsage(record);
+            }
+        }
+
+        public static string GetGlossaryVersionToken()
+        {
+            lock (SyncRoot)
+            {
+                var effective = GetEffectiveTerms();
+                if (effective.Count == 0)
+                {
+                    return "empty";
+                }
+
+                var fingerprint = string.Join("|", effective
+                    .OrderBy(x => x.Key, StringComparer.OrdinalIgnoreCase)
+                    .Select(x => $"{x.Key.Trim().ToLowerInvariant()}=>{(x.Value?.Target ?? string.Empty).Trim().ToLowerInvariant()}"));
+
+                using var sha256 = SHA256.Create();
+                byte[] hashBytes = sha256.ComputeHash(Encoding.UTF8.GetBytes(fingerprint));
+                return BitConverter.ToString(hashBytes).Replace("-", "").ToLowerInvariant()[..16];
+            }
+        }
 
         internal static void InitializeForTests(string basePath)
         {
             lock (SyncRoot)
             {
-                Database?.Dispose();
-                Database = null;
+                _store?.Dispose();
+                _store = null;
                 _basePathOverride = basePath;
-                _cachedEffectiveTerms = null; // Invalidate cache for clean test state
+                _cachedEffectiveTerms = null;
                 Initialize();
             }
         }
@@ -285,90 +402,104 @@ namespace Segment.App.Services
         {
             lock (SyncRoot)
             {
-                Database?.Dispose();
-                Database = null;
+                _store?.Dispose();
+                _store = null;
                 _basePathOverride = null;
-                _cachedEffectiveTerms = null; // Clear cache on disposal
+                _cachedEffectiveTerms = null;
             }
         }
 
-        private static void MigrateJsonToLiteDbIfNeeded()
+        private static IGlossaryStore EnsureStore()
         {
-            string globalJsonPath = Path.Combine(GlobalPath, "glossary.json");
-            var projectJsonFiles = Directory.Exists(ProjectsPath)
-                ? Directory.GetFiles(ProjectsPath, "*.json")
-                : Array.Empty<string>();
-
-            bool hasJson = File.Exists(globalJsonPath) || projectJsonFiles.Length > 0;
-            if (!hasJson) return;
-
-            bool hasDbData = ProfilesCollection.Count() > 0 || GetTermsCollection(GlobalProfileName).Count() > 0;
-            if (hasDbData) return;
-
-            if (File.Exists(globalJsonPath))
-            {
-                var legacyGlobal = DeserializeLegacyProfile(globalJsonPath);
-                if (legacyGlobal?.Terms != null)
-                    UpsertLegacyTerms(GlobalProfileName, legacyGlobal.Terms, true);
-            }
-
-            foreach (var file in projectJsonFiles)
-            {
-                var legacyProfile = DeserializeLegacyProfile(file);
-                if (legacyProfile == null) continue;
-
-                string profileName = !string.IsNullOrWhiteSpace(legacyProfile.Name)
-                    ? legacyProfile.Name
-                    : Path.GetFileNameWithoutExtension(file);
-
-                ProfilesCollection.Upsert(new GlossaryProfileRecord
-                {
-                    Name = profileName,
-                    IsFrozen = legacyProfile.IsFrozen
-                });
-
-                if (legacyProfile.Terms != null)
-                    UpsertLegacyTerms(profileName, legacyProfile.Terms, false);
-            }
+            return _store ?? throw new InvalidOperationException("Glossary store is not initialized.");
         }
 
-        private static void UpsertLegacyTerms(string profileName, Dictionary<string, TermEntry> terms, bool isGlobal)
+        private static TermEntry WithInferredMetadata(TermEntry entry, string profileName, bool isGlobal)
         {
-            var collection = GetTermsCollection(profileName);
-            foreach (var kvp in terms)
-            {
-                if (kvp.Value == null) continue;
-                kvp.Value.Source = string.IsNullOrWhiteSpace(kvp.Value.Source) ? kvp.Key : kvp.Value.Source;
-                if (string.IsNullOrWhiteSpace(kvp.Value.Context))
-                    kvp.Value.Context = isGlobal ? "global" : profileName;
-                collection.Upsert(kvp.Value);
-            }
+            entry.ScopeType = InferScopeType(profileName, isGlobal, entry.ScopeType);
+            entry.ScopeOwnerId = InferScopeOwnerId(profileName, isGlobal, entry.ScopeOwnerId);
+            entry.DomainVertical = InferDomain(entry.DomainVertical);
+            entry.SourceLanguage = string.IsNullOrWhiteSpace(entry.SourceLanguage) ? "English" : entry.SourceLanguage;
+            entry.TargetLanguage = string.IsNullOrWhiteSpace(entry.TargetLanguage) ? SettingsService.Current.TargetLanguage : entry.TargetLanguage;
+            return entry;
         }
 
-        private static LegacyGlossaryProfile? DeserializeLegacyProfile(string path)
+        private static GlossaryScopeType InferScopeType(string profileName, bool isGlobal, GlossaryScopeType existing)
         {
-            try
+            if (isGlobal)
             {
-                return System.Text.Json.JsonSerializer.Deserialize<LegacyGlossaryProfile>(File.ReadAllText(path));
+                return existing == GlossaryScopeType.System
+                    ? GlossaryScopeType.System
+                    : GlossaryScopeType.User;
             }
-            catch
+
+            if (existing != GlossaryScopeType.Project)
             {
-                return null;
+                return existing;
             }
+
+            if (profileName.StartsWith("system", StringComparison.OrdinalIgnoreCase)) return GlossaryScopeType.System;
+            if (profileName.StartsWith("team", StringComparison.OrdinalIgnoreCase)) return GlossaryScopeType.Team;
+            if (profileName.StartsWith("session", StringComparison.OrdinalIgnoreCase)) return GlossaryScopeType.Session;
+            return GlossaryScopeType.Project;
         }
 
-        private class GlossaryProfileRecord
+        private static string InferScopeOwnerId(string profileName, bool isGlobal, string existing)
         {
-            [BsonId]
-            public string Name { get; set; } = "";
-            public bool IsFrozen { get; set; }
+            if (!string.IsNullOrWhiteSpace(existing))
+            {
+                return existing;
+            }
+
+            if (isGlobal)
+            {
+                return SettingsService.Current.AccountId ?? "account-local";
+            }
+
+            return profileName;
         }
 
-        private class LegacyGlossaryProfile
+        private static DomainVertical InferDomain(DomainVertical existing)
         {
-            public string Name { get; set; } = "Default";
-            public Dictionary<string, TermEntry> Terms { get; set; } = new(StringComparer.OrdinalIgnoreCase);
-            public bool IsFrozen { get; set; } = false;
+            if (Enum.IsDefined(typeof(DomainVertical), existing))
+            {
+                return existing;
+            }
+
+            return Enum.TryParse(SettingsService.Current.ActiveDomain, out DomainVertical parsed)
+                ? parsed
+                : DomainVertical.Legal;
+        }
+
+        private sealed class StoreBackedTermCollection : ITermCollection
+        {
+            private readonly IGlossaryStore _store;
+            private readonly string _scopeName;
+
+            public StoreBackedTermCollection(IGlossaryStore store, string scopeName)
+            {
+                _store = store;
+                _scopeName = scopeName;
+            }
+
+            public IEnumerable<TermEntry> FindAll() => _store.GetTerms(_scopeName);
+            public TermEntry? FindById(string source) => _store.FindTerm(_scopeName, source);
+
+            public bool Upsert(TermEntry entry)
+            {
+                _store.UpsertTerm(_scopeName, entry);
+                return true;
+            }
+
+            public bool Delete(string source)
+            {
+                return _store.DeleteTerm(_scopeName, source);
+            }
+
+            public int Count()
+            {
+                return _store.CountTerms(_scopeName);
+            }
         }
     }
 }

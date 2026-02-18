@@ -1,4 +1,5 @@
-﻿using System;
+using Segment.App.Models;
+using System;
 using System.Windows;
 using System.Windows.Threading;
 
@@ -63,7 +64,7 @@ namespace Segment.App.Services
 
         private static void OnTimerTick(object? sender, EventArgs e)
         {
-            // Takip modunda değilsek hiç işlem yapma (Sıfır CPU kullanımı)
+            // Takip modunda degilsek hi� islem yapma (Sifir CPU kullanimi)
             if (!_isWaitingForFeedback) return;
 
             try
@@ -72,13 +73,13 @@ namespace Segment.App.Services
 
                 string currentClipboard = System.Windows.Clipboard.GetText().Trim();
 
-                // Pano değişmediyse çık
+                // Pano degismediyse �ik
                 if (currentClipboard == _lastClipboardContent) return;
 
-                // Değişikliği kaydet
+                // Degisikligi kaydet
                 _lastClipboardContent = currentClipboard;
 
-                // Kendi koyduğumuz metinse çık
+                // Kendi koydugumuz metinse �ik
                 if (currentClipboard == _lastAiOutput.Trim()) return;
 
                 // Analiz et
@@ -100,17 +101,27 @@ namespace Segment.App.Services
             // Filtreler
             if (similarity < MinSimilarity)
             {
-                _isWaitingForFeedback = false; // Çok farklı, takibi bırak
+                _isWaitingForFeedback = false; // �ok farkli, takibi birak
                 return;
             }
 
-            if (similarity > MaxSimilarity) return; // Neredeyse aynı, devam et
+            if (similarity > MaxSimilarity) return; // Neredeyse ayni, devam et
 
             var change = TermDetective.Analyze(_lastSourceText, _lastAiOutput, userText);
 
             if (change != null)
             {
                 change.FullSourceText = _lastSourceText;
+                TermPromotionAssessment assessment = TermLearningSafetyEvaluator.Evaluate(change, similarity);
+                change.ConfidenceScore = assessment.ConfidenceScore;
+                change.ReputationScore = assessment.ReputationScore;
+                change.SafetyReason = assessment.Reason;
+
+                if (!assessment.IsEligible)
+                {
+                    _isWaitingForFeedback = false;
+                    return;
+                }
 
                 _notificationService.ShowToast(change);
 

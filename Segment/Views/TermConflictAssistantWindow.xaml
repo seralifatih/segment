@@ -1,0 +1,49 @@
+﻿<Window x:Class="Segment.App.Views.TermConflictAssistantWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        Title="Conflict Assistant" Height="260" Width="560"
+        WindowStartupLocation="CenterOwner"
+        ResizeMode="NoResize"
+        WindowStyle="SingleBorderWindow"
+        KeyDown="Window_KeyDown">
+    <Grid Margin="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel>
+            <TextBlock FontWeight="Bold" FontSize="14" Text="Ambiguous term collision"/>
+            <TextBlock x:Name="SummaryText" Margin="0,4,0,0" Foreground="#444" TextWrapping="Wrap"/>
+        </StackPanel>
+
+        <Grid Grid.Row="1" Margin="0,12,0,12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*"/>
+                <ColumnDefinition Width="16"/>
+                <ColumnDefinition Width="*"/>
+            </Grid.ColumnDefinitions>
+
+            <Border Grid.Column="0" BorderBrush="#C8C8C8" BorderThickness="1" CornerRadius="6" Padding="10">
+                <StackPanel>
+                    <TextBlock Text="Existing" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="ExistingText" Margin="0,6,0,0" FontSize="13" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="2" BorderBrush="#2D7D46" BorderThickness="1" CornerRadius="6" Padding="10">
+                <StackPanel>
+                    <TextBlock Text="New suggestion" FontWeight="SemiBold"/>
+                    <TextBlock x:Name="NewText" Margin="0,6,0,0" FontSize="13" TextWrapping="Wrap"/>
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Content="_Keep existing" Width="108" Margin="0,0,8,0" Click="KeepExisting_Click" IsDefault="True"/>
+            <Button Content="_Use new" Width="90" Margin="0,0,8,0" Click="UseNew_Click"/>
+            <Button Content="_Cancel" Width="84" Click="Cancel_Click" IsCancel="True"/>
+        </StackPanel>
+    </Grid>
+</Window>

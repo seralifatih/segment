@@ -12,6 +12,9 @@ namespace Segment.App.Services
         public string OldTerm { get; set; } = "";
         public string NewTerm { get; set; } = "";
         public string FullSourceText { get; set; } = ""; // Alignment için şart
+        public double ConfidenceScore { get; set; }
+        public double ReputationScore { get; set; }
+        public string SafetyReason { get; set; } = "";
     }
 
     public static class TermDetective

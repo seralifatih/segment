@@ -4,7 +4,11 @@ using System.Net.Http;
 using System.Reflection;
 using System.Text.Json;
 using System.Threading.Tasks;
-using System.Windows;
+using WpfApplication = System.Windows.Application;
+using MessageBox = System.Windows.MessageBox;
+using MessageBoxButton = System.Windows.MessageBoxButton;
+using MessageBoxImage = System.Windows.MessageBoxImage;
+using MessageBoxResult = System.Windows.MessageBoxResult;
 
 namespace Segment.Services
 {
@@ -46,7 +50,7 @@ namespace Segment.Services
                 if (remoteVersion > currentVersion)
                 {
                     // 3. Notify User (on UI Thread)
-                    Application.Current.Dispatcher.Invoke(() => 
+                    WpfApplication.Current.Dispatcher.Invoke(() => 
                     {
                         ShowUpdateNotification(updateInfo.Version, updateInfo.DownloadUrl);
                     });

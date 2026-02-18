@@ -1,17 +1,17 @@
-<Window x:Class="Segment.Views.WelcomeWindow"
+<Window x:Class="Segment.App.Views.WelcomeWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Welcome to Segment"
-        Height="540"
-        Width="520"
+        Height="620"
+        Width="560"
         WindowStartupLocation="CenterScreen"
         ResizeMode="CanResize"
         WindowStyle="SingleBorderWindow"
         Background="#F5F5F5"
-        MinHeight="500"
-        MinWidth="480"
-        MaxHeight="720">
-    
+        MinHeight="560"
+        MinWidth="500"
+        MaxHeight="760">
+
     <Window.Resources>
         <Style x:Key="ModernButton" TargetType="Button">
             <Setter Property="Background" Value="#8A2BE2"/>
@@ -51,13 +51,24 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
 
-        <TextBlock Grid.Row="0"
-                   Text="Welcome to Segment"
-                   FontSize="32"
-                   FontWeight="Bold"
-                   Foreground="#333333"
-                   HorizontalAlignment="Center"
-                   Margin="0,0,0,24"/>
+        <Grid Grid.Row="0" Margin="0,0,0,24">
+            <TextBlock Text="Welcome to Segment"
+                       FontSize="32"
+                       FontWeight="Bold"
+                       Foreground="#333333"
+                       HorizontalAlignment="Center"/>
+            <Border HorizontalAlignment="Right"
+                    VerticalAlignment="Top"
+                    CornerRadius="12"
+                    Background="#E3F2FD"
+                    Padding="10,4">
+                <TextBlock x:Name="LaunchPhaseBadgeText"
+                           Text="Phase: Phase0Readiness"
+                           FontSize="12"
+                           FontWeight="SemiBold"
+                           Foreground="#0D47A1"/>
+            </Border>
+        </Grid>
 
         <Border Grid.Row="1"
                 Background="White"
@@ -68,46 +79,52 @@
             <ScrollViewer VerticalScrollBarVisibility="Auto"
                           HorizontalScrollBarVisibility="Disabled">
                 <StackPanel Margin="10">
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                        <TextBlock Text="⌨️" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
-                        <StackPanel>
-                            <TextBlock Text="Activate" FontSize="16" FontWeight="SemiBold" Foreground="#333333"/>
-                            <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
-                                <Run>Press </Run>
-                                <Run FontWeight="Bold">Ctrl + Space</Run>
-                                <Run> to activate the assistant.</Run>
-                            </TextBlock>
-                        </StackPanel>
-                    </StackPanel>
+                    <TextBlock Text="Legal Launch Qualification"
+                               FontSize="18"
+                               FontWeight="SemiBold"
+                               Foreground="#333333"
+                               Margin="0,0,0,12"/>
 
-                    <StackPanel Orientation="Horizontal" Margin="0,0,0,20">
-                        <TextBlock Text="🧠" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
-                        <StackPanel>
-                            <TextBlock Text="Workflow" FontSize="16" FontWeight="SemiBold" Foreground="#333333"/>
-                            <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
-                                <Run>Copy text, let AI translate, fix it, and I'll learn.</Run>
-                            </TextBlock>
-                        </StackPanel>
-                    </StackPanel>
+                    <TextBlock Text="Role" FontSize="13" FontWeight="SemiBold" Foreground="#444444"/>
+                    <ComboBox x:Name="RoleCombo" Margin="0,4,0,12" Height="32">
+                        <ComboBoxItem Content="Freelancer"/>
+                        <ComboBoxItem Content="Agency"/>
+                        <ComboBoxItem Content="Enterprise"/>
+                    </ComboBox>
 
-                    <StackPanel Orientation="Horizontal">
-                        <TextBlock Text="📂" FontSize="24" Margin="0,0,15,0" VerticalAlignment="Top"/>
-                        <StackPanel>
-                            <TextBlock Text="Data" FontSize="16" FontWeight="SemiBold" Foreground="#333333"/>
-                            <TextBlock FontSize="14" Foreground="#444444" TextWrapping="Wrap">
-                                <Run>Import your TMX files in Settings.</Run>
-                            </TextBlock>
-                        </StackPanel>
-                    </StackPanel>
+                    <TextBlock Text="Domain Focus" FontSize="13" FontWeight="SemiBold" Foreground="#444444"/>
+                    <TextBox x:Name="DomainFocusBox" Margin="0,4,0,12" Height="32" Text="Legal translation"/>
+
+                    <TextBlock Text="Weekly Legal Volume Estimate" FontSize="13" FontWeight="SemiBold" Foreground="#444444"/>
+                    <TextBox x:Name="WeeklyVolumeBox" Margin="0,4,0,12" Height="32" Text="30"/>
+
+                    <TextBlock Text="Confidentiality Requirement" FontSize="13" FontWeight="SemiBold" Foreground="#444444"/>
+                    <ComboBox x:Name="ConfidentialityCombo" Margin="0,4,0,12" Height="32">
+                        <ComboBoxItem Content="Standard"/>
+                        <ComboBoxItem Content="High"/>
+                        <ComboBoxItem Content="Strict"/>
+                    </ComboBox>
+
+                    <CheckBox x:Name="GlossaryIntentBox"
+                              Margin="0,2,0,12"
+                              Content="I plan to use glossary/terminology controls regularly"
+                              IsChecked="True"/>
+
+                    <Border Background="#F4F8FF" BorderBrush="#D7E3FF" BorderThickness="1" CornerRadius="6" Padding="10">
+                        <TextBlock x:Name="DecisionText"
+                                   Text="Complete onboarding details to get qualified for current launch phase."
+                                   TextWrapping="Wrap"
+                                   Foreground="#1A237E"/>
+                    </Border>
                 </StackPanel>
             </ScrollViewer>
         </Border>
 
         <Button Grid.Row="2"
-                Content="Start Segment"
+                Content="Submit &amp; Start"
                 Style="{StaticResource ModernButton}"
                 HorizontalAlignment="Center"
                 Margin="0,30,0,0"
-                Click="Button_Click"/>
+                Click="StartButton_Click"/>
     </Grid>
 </Window>
